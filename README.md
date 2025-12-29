@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/logos/pomohub-app-logo.svg" alt="PomoHub Logo" width="120" height="120" />
+<img src="public/logos/pomohub-logo-white.svg" alt="PomoHub Logo" width="150" height="40" />
 
 # PomoHub 🍅
 
