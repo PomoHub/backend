@@ -35,6 +35,7 @@ func SetupRoutes(app *fiber.App) {
 	spaces.Post("/", CreateSpace)
 	spaces.Get("/", GetMySpaces)
 	spaces.Get("/:spaceId", GetSpaceDetails)
+	spaces.Put("/:spaceId", UpdateSpace)
 	spaces.Post("/:spaceId/members", AddMember)
 	spaces.Delete("/:spaceId/members/:userId", RemoveMember)
 	spaces.Delete("/:spaceId", DeleteSpace)
