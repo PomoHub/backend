@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: pomohub_api
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DATABASE_URL=host=postgres user=pomohub password=pomohub_secret dbname=pomohub_db port=5432 sslmode=disable
+      - REDIS_URL=valkey:6379
+      - JWT_SECRET=docker_secret_key
+    depends_on:
+      - postgres
+      - valkey
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: pomohub_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pomohub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pomohub_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-pomohub_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  valkey:
+    image: valkey/valkey:7.2
+    container_name: pomohub_valkey
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+
+volumes:
+  postgres_data:
+  valkey_data:
