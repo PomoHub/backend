@@ -126,7 +126,11 @@ func RemoveFriend(c *fiber.Ctx) error {
 
 // BlockUser blocks a user
 func BlockUser(c *fiber.Ctx) error {
-	userId := c.Locals("user_id").(string)
+	userIdUUID, err := getUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	userId := userIdUUID.String()
 	targetId := c.Params("userId")
 
 	// Check if any relationship exists and update/overwrite it
@@ -136,14 +140,14 @@ func BlockUser(c *fiber.Ctx) error {
 	if result.RowsAffected > 0 {
 		// Update existing
 		relationship.Status = models.FriendStatusBlocked
-		relationship.UserID = uuid.MustParse(userId) // Ensure I am the one blocking
+		relationship.UserID = userIdUUID // Ensure I am the one blocking
 		relationship.FriendID = uuid.MustParse(targetId)
 		relationship.UpdatedAt = time.Now()
 		db.DB.Save(&relationship)
 	} else {
 		// Create new block
 		block := models.Friend{
-			UserID:    uuid.MustParse(userId),
+			UserID:    userIdUUID,
 			FriendID:  uuid.MustParse(targetId),
 			Status:    models.FriendStatusBlocked,
 			CreatedAt: time.Now(),
@@ -157,7 +161,11 @@ func BlockUser(c *fiber.Ctx) error {
 
 // GetFriends returns list of accepted friends
 func GetFriends(c *fiber.Ctx) error {
-	userId := c.Locals("user_id").(string)
+	userIdUUID, err := getUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	userId := userIdUUID.String()
 
 	var friends []models.Friend
 	db.DB.Preload("User").Preload("Friend").Where(
@@ -180,7 +188,11 @@ func GetFriends(c *fiber.Ctx) error {
 
 // GetFriendRequests returns pending requests received by user
 func GetFriendRequests(c *fiber.Ctx) error {
-	userId := c.Locals("user_id").(string)
+	userIdUUID, err := getUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	userId := userIdUUID.String()
 
 	var requests []models.Friend
 	db.DB.Preload("User").Where("friend_id = ? AND status = ?", userId, models.FriendStatusPending).Find(&requests)
