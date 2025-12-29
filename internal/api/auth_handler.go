@@ -18,6 +18,7 @@ type RegisterRequest struct {
 	Password  string `json:"password"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
+	BirthDate string `json:"birth_date"`
 }
 
 type LoginRequest struct {
@@ -86,6 +87,15 @@ func Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not hash password"})
 	}
 
+	// Parse BirthDate
+	var birthDate time.Time
+	if req.BirthDate != "" {
+		parsed, err := time.Parse("2006-01-02", req.BirthDate)
+		if err == nil {
+			birthDate = parsed
+		}
+	}
+
 	// Create User
 	newUser := models.User{
 		Username:     req.Username,
@@ -93,6 +103,7 @@ func Register(c *fiber.Ctx) error {
 		PasswordHash: hashedPassword,
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
+		BirthDate:    birthDate,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}

@@ -71,4 +71,14 @@ func SetupRoutes(app *fiber.App) {
 	posts := v1.Group("/posts")
 	posts.Post("/", CreatePost)
 	posts.Delete("/:id", DeletePost)
+
+	// Friends
+	friends := v1.Group("/friends")
+	friends.Post("/request/:userId", SendFriendRequest)
+	friends.Post("/accept/:requestId", AcceptFriendRequest)
+	friends.Post("/reject/:requestId", RejectFriendRequest)
+	friends.Delete("/:friendId", RemoveFriend)
+	friends.Post("/block/:userId", BlockUser)
+	friends.Get("/", GetFriends)
+	friends.Get("/requests", GetFriendRequests)
 }
