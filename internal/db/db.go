@@ -32,6 +32,7 @@ func ConnectDB(cfg *config.Config) {
 		&models.HabitLog{},
 		&models.PomodoroSession{},
 		&models.Post{},
+		&models.Friend{},
 	); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
