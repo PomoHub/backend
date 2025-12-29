@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="public/logos/pomohub-logo-white.svg" alt="PomoHub Logo" width="150" height="40" />
-
-# PomoHub 🍅
+# <img src="public/logos/pomohub-logo-white.svg" alt="PomoHub Logo" width="300" height="80" />
 
 **Focus. Build Habits. Achieve Goals.**
 
