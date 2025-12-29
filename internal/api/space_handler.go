@@ -96,6 +96,33 @@ func GetMySpaces(c *fiber.Ctx) error {
 	return c.JSON(spaces)
 }
 
+// Get Space Details
+func GetSpaceDetails(c *fiber.Ctx) error {
+	userID, err := getUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	spaceIDStr := c.Params("spaceId")
+	spaceID, err := uuid.Parse(spaceIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid space ID"})
+	}
+
+	var space models.Space
+	// Check if user is a member
+	var membership models.SpaceMember
+	if err := db.DB.Where("space_id = ? AND user_id = ?", spaceID, userID).First(&membership).Error; err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "You are not a member of this space"})
+	}
+
+	if err := db.DB.Preload("Members").Preload("Members.User").First(&space, spaceID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Space not found"})
+	}
+
+	return c.JSON(space)
+}
+
 // Add Member to Space (by User ID)
 func AddMember(c *fiber.Ctx) error {
 	currentUserID, err := getUserID(c)

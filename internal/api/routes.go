@@ -34,6 +34,7 @@ func SetupRoutes(app *fiber.App) {
 	spaces := v1.Group("/spaces")
 	spaces.Post("/", CreateSpace)
 	spaces.Get("/", GetMySpaces)
+	spaces.Get("/:spaceId", GetSpaceDetails)
 	spaces.Post("/:spaceId/members", AddMember)
 	spaces.Delete("/:spaceId/members/:userId", RemoveMember)
 	spaces.Delete("/:spaceId", DeleteSpace)
@@ -65,11 +66,13 @@ func SetupRoutes(app *fiber.App) {
 	// Profile & Posts
 	users := v1.Group("/users")
 	users.Put("/me", UpdateProfile)
+	users.Get("/search", SearchUsers)
 	users.Get("/:username", GetUserProfile)
 	users.Get("/:username/posts", GetUserPosts)
 
 	posts := v1.Group("/posts")
 	posts.Post("/", CreatePost)
+	posts.Get("/feed", GetFriendsFeed)
 	posts.Delete("/:id", DeletePost)
 
 	// Friends

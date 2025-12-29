@@ -69,6 +69,57 @@ func GetUserProfile(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
+// Search Users
+func SearchUsers(c *fiber.Ctx) error {
+	query := c.Query("q")
+	if query == "" {
+		return c.JSON([]models.User{})
+	}
+
+	var users []models.User
+	// Search by username or email (case insensitive)
+	if err := db.DB.Where("username ILIKE ? OR email ILIKE ?", "%"+query+"%", "%"+query+"%").Limit(10).Find(&users).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Search failed"})
+	}
+
+	return c.JSON(users)
+}
+
+// Get Friends Feed
+func GetFriendsFeed(c *fiber.Ctx) error {
+	userID, err := getUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	// Get Friend IDs
+	var friendIDs []uuid.UUID
+
+	// Case 1: User is sender
+	var friends1 []models.Friend
+	db.DB.Where("user_id = ? AND status = ?", userID, "accepted").Find(&friends1)
+	for _, f := range friends1 {
+		friendIDs = append(friendIDs, f.FriendID)
+	}
+
+	// Case 2: User is receiver
+	var friends2 []models.Friend
+	db.DB.Where("friend_id = ? AND status = ?", userID, "accepted").Find(&friends2)
+	for _, f := range friends2 {
+		friendIDs = append(friendIDs, f.UserID)
+	}
+
+	// Add self to see own posts too
+	friendIDs = append(friendIDs, userID)
+
+	var posts []models.Post
+	if err := db.DB.Preload("User").Where("user_id IN ?", friendIDs).Order("created_at desc").Limit(50).Find(&posts).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not fetch feed"})
+	}
+
+	return c.JSON(posts)
+}
+
 // Create Post
 func CreatePost(c *fiber.Ctx) error {
 	userID, err := getUserID(c)
