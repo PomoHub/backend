@@ -12,9 +12,18 @@ import (
 
 // Middleware to extract user_id from JWT
 func getUserID(c *fiber.Ctx) (uuid.UUID, error) {
-	user := c.Locals("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	userIDStr := claims["user_id"].(string)
+	userToken, ok := c.Locals("user").(*jwt.Token)
+	if !ok || userToken == nil {
+		return uuid.Nil, fiber.ErrUnauthorized
+	}
+	claims, ok := userToken.Claims.(jwt.MapClaims)
+	if !ok {
+		return uuid.Nil, fiber.ErrUnauthorized
+	}
+	userIDStr, ok := claims["user_id"].(string)
+	if !ok {
+		return uuid.Nil, fiber.ErrUnauthorized
+	}
 	return uuid.Parse(userIDStr)
 }
 

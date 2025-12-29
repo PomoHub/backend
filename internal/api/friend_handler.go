@@ -11,7 +11,11 @@ import (
 
 // SendFriendRequest sends a friend request to a user
 func SendFriendRequest(c *fiber.Ctx) error {
-	userId := c.Locals("user_id").(string)
+	userIdUUID, err := getUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	userId := userIdUUID.String()
 	targetId := c.Params("userId")
 
 	if userId == targetId {
@@ -20,7 +24,7 @@ func SendFriendRequest(c *fiber.Ctx) error {
 
 	var existing models.Friend
 	result := db.DB.Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userId, targetId, targetId, userId).First(&existing)
-	
+
 	if result.RowsAffected > 0 {
 		if existing.Status == models.FriendStatusBlocked {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Cannot send request"})
@@ -29,7 +33,7 @@ func SendFriendRequest(c *fiber.Ctx) error {
 	}
 
 	friendRequest := models.Friend{
-		UserID:    uuid.MustParse(userId),
+		UserID:    userIdUUID,
 		FriendID:  uuid.MustParse(targetId),
 		Status:    models.FriendStatusPending,
 		CreatedAt: time.Now(),
@@ -46,7 +50,11 @@ func SendFriendRequest(c *fiber.Ctx) error {
 // AcceptFriendRequest accepts a received friend request
 func AcceptFriendRequest(c *fiber.Ctx) error {
 	requestId := c.Params("requestId")
-	userId := c.Locals("user_id").(string)
+	userIdUUID, err := getUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	userId := userIdUUID.String()
 
 	var request models.Friend
 	if err := db.DB.First(&request, "id = ?", requestId).Error; err != nil {
@@ -71,7 +79,11 @@ func AcceptFriendRequest(c *fiber.Ctx) error {
 // RejectFriendRequest rejects/deletes a friend request
 func RejectFriendRequest(c *fiber.Ctx) error {
 	requestId := c.Params("requestId")
-	userId := c.Locals("user_id").(string)
+	userIdUUID, err := getUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	userId := userIdUUID.String()
 
 	var request models.Friend
 	if err := db.DB.First(&request, "id = ?", requestId).Error; err != nil {
@@ -93,11 +105,15 @@ func RejectFriendRequest(c *fiber.Ctx) error {
 // RemoveFriend removes a friend connection
 func RemoveFriend(c *fiber.Ctx) error {
 	friendId := c.Params("friendId")
-	userId := c.Locals("user_id").(string)
+	userIdUUID, err := getUserID(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	userId := userIdUUID.String()
 
 	// Delete record where (user=me AND friend=them) OR (user=them AND friend=me)
 	result := db.DB.Where(
-		"((user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)) AND status = ?", 
+		"((user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)) AND status = ?",
 		userId, friendId, friendId, userId, models.FriendStatusAccepted,
 	).Delete(&models.Friend{})
 
@@ -145,7 +161,7 @@ func GetFriends(c *fiber.Ctx) error {
 
 	var friends []models.Friend
 	db.DB.Preload("User").Preload("Friend").Where(
-		"((user_id = ? OR friend_id = ?) AND status = ?)", 
+		"((user_id = ? OR friend_id = ?) AND status = ?)",
 		userId, userId, models.FriendStatusAccepted,
 	).Find(&friends)
 
